@@ -1,0 +1,67 @@
+#sidekick-suggestions {
+    position: fixed;
+    z-index: 10000;
+    bottom: 80px; /* Above the input bar typically */
+    left: 450px;
+    width: 350px;
+    background-color: #1f2326; /* WhatsApp Web Dark Theme */
+    border: 1px solid #3b4245;
+    border-radius: 12px;
+    box-shadow: 0px 4px 14px rgba(0, 0, 0, 0.4);
+    font-family: 'Segoe UI', "Helvetica Neue", Helvetica, Arial, sans-serif;
+    color: #e9edef;
+    display: none;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+#sidekick-suggestions .sk-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    border-bottom: 1px solid #3b4245;
+    font-size: 14px;
+    font-weight: 600;
+    color: #00a884; /* WA green */
+}
+
+#sk-close {
+    background: none;
+    border: none;
+    color: #8da4ae;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+#sk-close:hover {
+    color: #fff;
+}
+
+.sk-options-container {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.sk-option {
+    background-color: #2a2f32;
+    border: 1px solid #3b4245;
+    border-radius: 8px;
+    padding: 12px;
+    color: #e9edef;
+    font-size: 14px;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    line-height: 1.4;
+}
+
+.sk-option:hover {
+    background-color: #3b4245;
+}
+
+.sk-option:active {
+    background-color: #0b141a;
+}
