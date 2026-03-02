@@ -71,7 +71,7 @@ async def generate_reply(data: RequestData, request: Request):
     
     try:
         response = requests.post('http://localhost:11434/api/generate', json={
-            "model": "llama3.2",
+            "model": "qwen2.5:7b",
             "prompt": prompt,
             "stream": False,
             "format": "json" 

@@ -1,6 +1,6 @@
 # 🛡️ Reply Sidekick for WhatsApp Web
 
-A privacy-first, locally-hosted Chrome Extension that seamlessly integrates with WhatsApp Web to auto-suggest intelligent, context-aware replies using an offline LLM (Llama 3.2 via Ollama).
+A privacy-first, locally-hosted Chrome Extension that seamlessly integrates with WhatsApp Web to auto-suggest intelligent, context-aware replies using an offline LLM (Qwen 2.5 via Ollama).
 
 Unlike other AI assistants, **Reply Sidekick runs 100% locally on your machine**. Your private WhatsApp chats are never sent to external servers like OpenAI or Anthropic.
 
@@ -20,9 +20,9 @@ Before you start, make sure you have the following installed on your machine:
 1. **Python 3.9+** (For the local API server)
 2. **[Ollama](https://ollama.com/)** (To run the local LLM)
 
-Once Ollama is installed, you need to pull the Llama 3.2 model in your terminal:
+Once Ollama is installed, you need to pull the Qwen 2.5 (7B) model in your terminal:
 ```bash
-ollama run llama3.2
+ollama run qwen2.5:7b
 ```
 
 ---

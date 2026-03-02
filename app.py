@@ -38,7 +38,7 @@ def generate_reply():
 
     # Call Ollama API (Standard port 11434)
     response = requests.post('http://localhost:11434/api/generate', json={
-        "model": "llama3.2", # Make sure you pulled this model!
+        "model": "qwen2.5:7b", # Make sure you pulled this model!
         "prompt": prompt,
         "stream": False
     })
