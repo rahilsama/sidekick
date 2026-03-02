@@ -1,10 +1,12 @@
 #sidekick-suggestions {
     position: fixed;
     z-index: 10000;
-    bottom: 80px; /* Above the input bar typically */
-    left: 450px;
+    bottom: 80px;
+    /* Above the input bar typically */
+    /* Position calculated dynamically in JS */
     width: 350px;
-    background-color: #1f2326; /* WhatsApp Web Dark Theme */
+    background-color: #1f2326;
+    /* WhatsApp Web Dark Theme */
     border: 1px solid #3b4245;
     border-radius: 12px;
     box-shadow: 0px 4px 14px rgba(0, 0, 0, 0.4);
@@ -23,7 +25,8 @@
     border-bottom: 1px solid #3b4245;
     font-size: 14px;
     font-weight: 600;
-    color: #00a884; /* WA green */
+    color: #00a884;
+    /* WA green */
 }
 
 #sk-close {

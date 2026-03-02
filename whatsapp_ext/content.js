@@ -92,15 +92,16 @@ function showSuggestions(suggestions, inputBox) {
     sidekickUI.appendChild(container);
     sidekickUI.style.display = 'block';
 
-    // Position just above the input box (footer area)
+    // Position just above the input box (footer area) but on the right side
     const mainChat = document.querySelector('#main');
     if (mainChat) {
         const footerElement = mainChat.querySelector('footer');
         if (footerElement) {
             const rect = footerElement.getBoundingClientRect();
-            // Position above the footer
+            // Position above the footer on the right
             sidekickUI.style.bottom = (window.innerHeight - rect.top + 10) + 'px';
-            sidekickUI.style.left = (rect.left + 20) + 'px';
+            sidekickUI.style.left = 'auto';
+            sidekickUI.style.right = (window.innerWidth - rect.right + 20) + 'px';
         }
     }
 }
