@@ -117,25 +117,19 @@ function insertText(text, inputBoxNode) {
     // Ensure browser thinks we are actively in the box
     inputBoxNode.focus();
 
-    // Select all the current nodes in the text box
-    const range = document.createRange();
-    range.selectNodeContents(inputBoxNode);
-    const sel = window.getSelection();
-    sel.removeAllRanges();
-    sel.addRange(range);
+    // 1. Try selecting all text cleanly
+    document.execCommand('selectAll', false, null);
 
-    // Simulate a native 'paste' event (Modern, non-deprecated approach)
-    // Complex React/Lexical editors like WA capture this directly from the ClipboardData layer
-    const dataTransfer = new DataTransfer();
-    dataTransfer.setData('text/plain', text);
+    // 2. Execute 'delete' to wipe whatever is selected.
+    // As a bulletproof fallback for React/Lexical: if selectAll failed and the caret is just 
+    // sitting at the end of the text, this loop will organically backspace the entire draft!
+    const draftLength = inputBoxNode.innerText.length + 20;
+    for (let i = 0; i < draftLength; i++) {
+        document.execCommand('delete', false, null);
+    }
 
-    const pasteEvent = new ClipboardEvent('paste', {
-        clipboardData: dataTransfer,
-        bubbles: true,
-        cancelable: true
-    });
-
-    inputBoxNode.dispatchEvent(pasteEvent);
+    // 3. The text box is now guaranteed empty. Insert the AI response!
+    document.execCommand('insertText', false, text);
 }
 
 let typingTimer;
