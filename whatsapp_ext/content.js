@@ -131,18 +131,12 @@ function insertText(text) {
     // Without this delay, Lexical ignores our programmatic selection and
     // the beforeinput event has no effect.
     setTimeout(() => {
-        // Step 3: Tell Lexical "the user typed this text" while text is selected.
+        // Tell Lexical "the user typed this text" while text is selected.
         // Lexical handles this by deleting the selection first, then inserting.
-        // This is the EXACT same event pipeline that a real keyboard generates.
+        // Lexical fires its own 'input' event after processing, so we only need beforeinput.
         liveInput.dispatchEvent(new InputEvent('beforeinput', {
             bubbles: true,
             cancelable: true,
-            inputType: 'insertText',
-            data: text
-        }));
-
-        liveInput.dispatchEvent(new InputEvent('input', {
-            bubbles: true,
             inputType: 'insertText',
             data: text
         }));
