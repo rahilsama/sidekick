@@ -112,9 +112,7 @@ function showSuggestions(suggestions, inputBox) {
 }
 
 function insertText(text) {
-    // CRITICAL: Always re-find the LIVE input box fresh from the DOM at click time.
-    // The reference captured when suggestions were generated may be stale 
-    // because WhatsApp's React/Lexical re-renders the contenteditable div.
+    // Always re-find the LIVE input box fresh from the DOM at click time.
     const mainChat = document.querySelector('#main');
     if (!mainChat) return;
     const liveInput = mainChat.querySelector('footer div[contenteditable="true"]');
@@ -122,32 +120,37 @@ function insertText(text) {
 
     liveInput.focus();
 
-    // Select all content in the live input box
+    // Step 1: Select all content in the live input box
     const range = document.createRange();
     range.selectNodeContents(liveInput);
     const sel = window.getSelection();
     sel.removeAllRanges();
     sel.addRange(range);
 
-    // Delete the selected content via the Selection/Range API
-    range.deleteContents();
+    // Step 2: Wait a tick so Lexical internally registers the selection change.
+    // Without this delay, Lexical ignores our programmatic selection and
+    // the beforeinput event has no effect.
+    setTimeout(() => {
+        // Step 3: Tell Lexical "the user typed this text" while text is selected.
+        // Lexical handles this by deleting the selection first, then inserting.
+        // This is the EXACT same event pipeline that a real keyboard generates.
+        liveInput.dispatchEvent(new InputEvent('beforeinput', {
+            bubbles: true,
+            cancelable: true,
+            inputType: 'insertText',
+            data: text
+        }));
 
-    // Insert the new text as a fresh text node
-    const textNode = document.createTextNode(text);
-    range.insertNode(textNode);
+        liveInput.dispatchEvent(new InputEvent('input', {
+            bubbles: true,
+            inputType: 'insertText',
+            data: text
+        }));
 
-    // Move cursor to end of the new text
-    range.setStartAfter(textNode);
-    range.setEndAfter(textNode);
-    sel.removeAllRanges();
-    sel.addRange(range);
-
-    // Notify React/Lexical that content changed
-    liveInput.dispatchEvent(new InputEvent('input', {
-        bubbles: true,
-        inputType: 'insertText',
-        data: text
-    }));
+        // Reset state so next autocomplete cycle works identically to the first
+        isSuggesting = false;
+        lastChatContext = "";
+    }, 50);
 }
 
 let typingTimer;
