@@ -112,13 +112,30 @@ function showSuggestions(suggestions, inputBox) {
 }
 
 function insertText(text, inputBoxNode) {
-    if (inputBoxNode) {
-        // Ensure browser thinks we are actively in the box
-        inputBoxNode.focus();
-        // Since focus wasn't stolen by the mouse click, we can cleanly select all and overwrite
-        document.execCommand('selectAll', false, null);
-        document.execCommand('insertText', false, text);
-    }
+    if (!inputBoxNode) return;
+
+    // Ensure browser thinks we are actively in the box
+    inputBoxNode.focus();
+
+    // Select all the current nodes in the text box
+    const range = document.createRange();
+    range.selectNodeContents(inputBoxNode);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+
+    // Simulate a native 'paste' event (Modern, non-deprecated approach)
+    // Complex React/Lexical editors like WA capture this directly from the ClipboardData layer
+    const dataTransfer = new DataTransfer();
+    dataTransfer.setData('text/plain', text);
+
+    const pasteEvent = new ClipboardEvent('paste', {
+        clipboardData: dataTransfer,
+        bubbles: true,
+        cancelable: true
+    });
+
+    inputBoxNode.dispatchEvent(pasteEvent);
 }
 
 let typingTimer;
