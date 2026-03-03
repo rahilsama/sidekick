@@ -109,8 +109,16 @@ function showSuggestions(suggestions, inputBox) {
 function insertText(text, inputBoxNode) {
     if (inputBoxNode) {
         inputBoxNode.focus();
-        // Select all existing text in the box so it gets replaced
-        document.execCommand('selectAll', false, null);
+
+        // Manually select all nodes in the contentEditable box so execCommand replaces them
+        const range = document.createRange();
+        range.selectNodeContents(inputBoxNode);
+
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+
+        // WhatsApp react listener grabs events through standard ExecCommand
         document.execCommand('insertText', false, text);
     }
 }
