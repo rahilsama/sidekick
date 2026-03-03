@@ -88,7 +88,7 @@ function showSuggestions(suggestions, inputBox) {
         btn.onclick = (e) => {
             e.preventDefault();
             e.stopPropagation();
-            insertText(sug, inputBox);
+            insertText(sug);
             sidekickUI.style.display = 'none';
         };
         container.appendChild(btn);
@@ -111,28 +111,39 @@ function showSuggestions(suggestions, inputBox) {
     }
 }
 
-function insertText(text, inputBoxNode) {
-    if (!inputBoxNode) return;
+function insertText(text) {
+    // CRITICAL: Always re-find the LIVE input box fresh from the DOM at click time.
+    // The reference captured when suggestions were generated may be stale 
+    // because WhatsApp's React/Lexical re-renders the contenteditable div.
+    const mainChat = document.querySelector('#main');
+    if (!mainChat) return;
+    const liveInput = mainChat.querySelector('footer div[contenteditable="true"]');
+    if (!liveInput) return;
 
-    inputBoxNode.focus();
+    liveInput.focus();
 
-    // 1. Nuke all existing content directly in the DOM
-    inputBoxNode.innerHTML = '';
-
-    // 2. Create a fresh text node with the AI suggestion
-    const textNode = document.createTextNode(text);
-    inputBoxNode.appendChild(textNode);
-
-    // 3. Place cursor at end of the new text
+    // Select all content in the live input box
     const range = document.createRange();
-    range.selectNodeContents(inputBoxNode);
-    range.collapse(false); // collapse to end
+    range.selectNodeContents(liveInput);
     const sel = window.getSelection();
     sel.removeAllRanges();
     sel.addRange(range);
 
-    // 4. Notify React/Lexical that content changed via modern InputEvent
-    inputBoxNode.dispatchEvent(new InputEvent('input', {
+    // Delete the selected content via the Selection/Range API
+    range.deleteContents();
+
+    // Insert the new text as a fresh text node
+    const textNode = document.createTextNode(text);
+    range.insertNode(textNode);
+
+    // Move cursor to end of the new text
+    range.setStartAfter(textNode);
+    range.setEndAfter(textNode);
+    sel.removeAllRanges();
+    sel.addRange(range);
+
+    // Notify React/Lexical that content changed
+    liveInput.dispatchEvent(new InputEvent('input', {
         bubbles: true,
         inputType: 'insertText',
         data: text
