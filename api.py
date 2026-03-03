@@ -23,6 +23,7 @@ app.add_middleware(
 
 class RequestData(BaseModel):
     chat_history: str
+    current_input: str = ""
 
 # Console Colors
 C_GREEN = '\033[92m'
@@ -80,6 +81,77 @@ async def generate_reply(data: RequestData, request: Request):
         model_time = time.time() - model_time_start
         content_text = json.loads(response.content)['response']
         
+        parsed_json = json.loads(content_text)
+        
+        if isinstance(parsed_json, dict):
+            list_values = [v for v in parsed_json.values() if isinstance(v, list)]
+            if list_values:
+                replies = list_values[0]
+            else:
+                replies = list(parsed_json.values())
+        else:
+            replies = parsed_json
+            
+        if not isinstance(replies, list):
+            replies = [f"Parsing error. Model returned: {str(parsed_json)[:50]}"]
+        elif len(replies) == 0:
+            replies = ["Model returned an empty list."]
+        else:
+            replies = [str(r).strip() for r in replies]
+            success = True
+            
+    except requests.exceptions.Timeout:
+        model_time = time.time() - model_time_start
+        replies = ["Ollama request timed out. Model might be still loading."]
+    except Exception as e:
+        model_time = time.time() - model_time_start
+        replies = [f"Error connecting to local Ollama. Details: {str(e)}"]
+
+    print_metrics(start_time, chat_length, msg_count, model_time, success)
+    return {"replies": replies}
+
+@app.post("/auto-correct")
+async def auto_correct(data: RequestData, request: Request):
+    start_time = time.time()
+    
+    chat_history = data.chat_history
+    msg_count = len(chat_history.split('\n'))
+    chat_length = len(chat_history)
+    
+    user_input = data.current_input.strip()
+    
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] {C_YELLOW}User stopped typing! Analyzing draft...{C_RESET}")
+
+    prompt = f"""
+    You are an intelligent typing assistant for a messaging app.
+    Here is the recent chat history for context:
+    {data.chat_history}
+    
+    The user is currently typing this response: "{user_input}"
+    
+    Task: The user has stopped typing. Provide 3 different options to autocomplete or auto-correct their draft.
+    - Option 1: Fix grammar/spelling of the draft. Do NOT alter the meaning.
+    - Option 2: Provide a logical, slightly expanded completion of their thought.
+    - Option 3: Provide a professional/polished version of what they are trying to say based on context.
+    
+    Keep the replies concise and natural for a chat.
+    Your response must be ONLY a raw JSON array containing exactly 3 strings. 
+    Example: ["Option 1", "Option 2", "Option 3"]
+    """
+
+    model_time_start = time.time()
+    success = False
+    
+    try:
+        response = requests.post('http://localhost:11434/api/generate', json={
+            "model": "qwen2.5:7b",
+            "prompt": prompt,
+            "stream": False,
+            "format": "json" 
+        }, timeout=25)
+        
+        model_time = time.time() - model_time_start
+        content_text = json.loads(response.content)['response']
         parsed_json = json.loads(content_text)
         
         if isinstance(parsed_json, dict):

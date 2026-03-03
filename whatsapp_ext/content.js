@@ -113,39 +113,41 @@ function insertText(text, inputBoxNode) {
     }
 }
 
-async function handleTypingBoxInteraction(e) {
-    // Only trigger if we clicked inside an editable typing box inside #main
-    const target = e.target;
-    const inputBox = target.closest('div[contenteditable="true"]');
+let typingTimer;
+const DONE_TYPING_INTERVAL = 5000; // 5 seconds
 
-    // Check if it's the main chat input
-    const mainChat = document.querySelector('#main');
-    if (!inputBox || !mainChat || !mainChat.contains(inputBox)) {
-        // If clicking outside, maybe hide suggestions
-        if (sidekickUI && target.closest('#sidekick-suggestions') === null) {
-            // Uncomment to auto-hide when clicking elsewhere
-            // sidekickUI.style.display = 'none'; 
-        }
-        return;
-    }
-
+async function handleAction(inputBox, isAutoCorrection) {
     const chatHistory = scanMessages();
     if (!chatHistory.trim()) return;
 
-    // Prevent re-triggering for the exact same context within a short timeframe
-    if (isSuggesting && chatHistory === lastChatContext) return;
-    if (chatHistory === lastChatContext && sidekickUI && sidekickUI.style.display === 'block') return;
+    // Grab what the user has currently typed (if anything)
+    let currentInputText = "";
+    if (inputBox) {
+        currentInputText = inputBox.innerText.trim();
+    }
 
-    lastChatContext = chatHistory;
+    // Prevent re-triggering for the exact same context within a short timeframe
+    // unless the typing context specifically triggered an autocomplete
+    const contextKey = chatHistory + "|||" + currentInputText;
+    if (isSuggesting && contextKey === lastChatContext) return;
+    if (contextKey === lastChatContext && sidekickUI && sidekickUI.style.display === 'block') return;
+
+    lastChatContext = contextKey;
     console.log("[Sidekick] Scraped History:\n", chatHistory);
+    if (currentInputText) {
+        console.log("[Sidekick] User currently typed:\n", currentInputText);
+    }
 
     isSuggesting = true;
     showSuggestions(["Thinking... (Reading context 🔍)"], inputBox);
 
     try {
+        const endpoint = isAutoCorrection ? "http://127.0.0.1:8000/auto-correct" : "http://127.0.0.1:8000/generate-reply";
+
         chrome.runtime.sendMessage({
-            type: "GENERATE_REPLY",
-            chatHistory: chatHistory
+            type: isAutoCorrection ? "AUTO_CORRECT" : "GENERATE_REPLY",
+            chatHistory: chatHistory,
+            currentInput: currentInputText
         }, (response) => {
             if (response && response.success) {
                 const data = response.data;
@@ -168,6 +170,59 @@ async function handleTypingBoxInteraction(e) {
     }
 }
 
-// We use 'focusin' and 'click' to capture when the user readies to type
+function getValidInputBox(target) {
+    const inputBox = target.closest('div[contenteditable="true"]');
+    const mainChat = document.querySelector('#main');
+    if (!inputBox || !mainChat || !mainChat.contains(inputBox)) {
+        return null;
+    }
+    return inputBox;
+}
+
+function handleTypingEvent(e) {
+    const inputBox = getValidInputBox(e.target);
+    if (!inputBox) return;
+
+    clearTimeout(typingTimer);
+
+    // Hide UI while actively typing
+    if (sidekickUI) {
+        sidekickUI.style.display = 'none';
+        isSuggesting = false;
+    }
+
+    // Only set timer if there's actually text typed
+    if (inputBox.innerText.trim().length > 0) {
+        typingTimer = setTimeout(() => {
+            handleAction(inputBox, true); // true = isAutoCorrection
+        }, DONE_TYPING_INTERVAL);
+    }
+}
+
+async function handleTypingBoxInteraction(e) {
+    const inputBox = getValidInputBox(e.target);
+    if (!inputBox) {
+        if (sidekickUI && e.target.closest('#sidekick-suggestions') === null) {
+            // sidekickUI.style.display = 'none'; 
+        }
+        return;
+    }
+
+    // Standard click handling (generate reply options from empty box)
+    if (inputBox.innerText.trim() === '') {
+        handleAction(inputBox, false); // false = Standard Reply Generaton
+    }
+}
+
+// Event Listeners
 document.addEventListener("focusin", handleTypingBoxInteraction, true);
 document.addEventListener("click", handleTypingBoxInteraction, true);
+
+// Listen for actual typing events
+document.addEventListener("input", handleTypingEvent, true);
+document.addEventListener("keydown", (e) => {
+    const inputBox = getValidInputBox(e.target);
+    if (inputBox) clearTimeout(typingTimer);
+}, true);
+
+
