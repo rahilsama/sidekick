@@ -187,7 +187,12 @@ async function handleAction(inputBox, isAutoCorrection) {
 }
 
 function getValidInputBox(target) {
-    const inputBox = target.closest('div[contenteditable="true"]');
+    // If the target is a text block, we must get its parent element first, 
+    // otherwise .closest() throws a Javascript Type Error!
+    let el = target.nodeType === 3 ? target.parentNode : target;
+    if (!el || !el.closest) return null;
+
+    const inputBox = el.closest('div[contenteditable="true"]');
     const mainChat = document.querySelector('#main');
     if (!inputBox || !mainChat || !mainChat.contains(inputBox)) {
         return null;
