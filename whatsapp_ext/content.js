@@ -114,7 +114,8 @@ function insertText(text, inputBoxNode) {
 }
 
 let typingTimer;
-const DONE_TYPING_INTERVAL = 5000; // 5 seconds
+const DONE_TYPING_INTERVAL = 600; // Fast real-time typing debounce (600ms)
+let currentRequestToken = 0;
 
 async function handleAction(inputBox, isAutoCorrection) {
     const chatHistory = scanMessages();
@@ -126,20 +127,23 @@ async function handleAction(inputBox, isAutoCorrection) {
         currentInputText = inputBox.innerText.trim();
     }
 
-    // Prevent re-triggering for the exact same context within a short timeframe
-    // unless the typing context specifically triggered an autocomplete
+    // Prevent re-triggering for the exact same context
     const contextKey = chatHistory + "|||" + currentInputText;
     if (isSuggesting && contextKey === lastChatContext) return;
     if (contextKey === lastChatContext && sidekickUI && sidekickUI.style.display === 'block') return;
 
     lastChatContext = contextKey;
-    console.log("[Sidekick] Scraped History:\n", chatHistory);
-    if (currentInputText) {
-        console.log("[Sidekick] User currently typed:\n", currentInputText);
-    }
+
+    currentRequestToken++;
+    const thisRequestToken = currentRequestToken;
 
     isSuggesting = true;
-    showSuggestions(["Thinking... (Reading context 🔍)"], inputBox);
+
+    // Only show "Thinking..." if the UI isn't already open with old suggestions, 
+    // to avoid flickering the UI during fast typing
+    if (!sidekickUI || sidekickUI.style.display === 'none') {
+        showSuggestions(["Thinking... (Reading context 🔍)"], inputBox);
+    }
 
     try {
         const endpoint = isAutoCorrection ? "http://127.0.0.1:8000/auto-correct" : "http://127.0.0.1:8000/generate-reply";
@@ -149,21 +153,25 @@ async function handleAction(inputBox, isAutoCorrection) {
             chatHistory: chatHistory,
             currentInput: currentInputText
         }, (response) => {
+            // Ignore stale responses if the user has typed since this request was sent
+            if (thisRequestToken !== currentRequestToken) return;
+
             if (response && response.success) {
                 const data = response.data;
                 if (data.replies && data.replies.length > 0) {
                     showSuggestions(data.replies, inputBox);
                 } else {
                     showSuggestions(["No response generated. Chat might be too short or error occurred."], inputBox);
-                    setTimeout(() => { isSuggesting = false; }, 3000);
+                    setTimeout(() => { if (thisRequestToken === currentRequestToken) isSuggesting = false; }, 3000);
                 }
             } else {
                 console.error("[Sidekick] Background API Error:", response ? response.error : "Unknown");
                 showSuggestions(["Error connecting to local API. Is it running? (Check CLI)"], inputBox);
-                setTimeout(() => { isSuggesting = false; }, 3000);
+                setTimeout(() => { if (thisRequestToken === currentRequestToken) isSuggesting = false; }, 3000);
             }
         });
     } catch (err) {
+        if (thisRequestToken !== currentRequestToken) return;
         console.error("[Sidekick] Extension Communication Error:", err);
         showSuggestions(["Error: Extension background script failed."], inputBox);
         setTimeout(() => { isSuggesting = false; }, 3000);
@@ -185,17 +193,17 @@ function handleTypingEvent(e) {
 
     clearTimeout(typingTimer);
 
-    // Hide UI while actively typing
-    if (sidekickUI) {
-        sidekickUI.style.display = 'none';
-        isSuggesting = false;
-    }
-
     // Only set timer if there's actually text typed
     if (inputBox.innerText.trim().length > 0) {
         typingTimer = setTimeout(() => {
             handleAction(inputBox, true); // true = isAutoCorrection
         }, DONE_TYPING_INTERVAL);
+    } else {
+        // If they backspace everything, hide the UI immediately
+        if (sidekickUI) {
+            sidekickUI.style.display = 'none';
+        }
+        isSuggesting = false;
     }
 }
 
