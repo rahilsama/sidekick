@@ -123,20 +123,16 @@ async def auto_correct(data: RequestData, request: Request):
     print(f"[{datetime.now().strftime('%H:%M:%S')}] {C_YELLOW}User stopped typing! Analyzing draft...{C_RESET}")
 
     prompt = f"""
-    You are an intelligent typing assistant for a messaging app.
-    Here is the recent chat history for context:
-    {data.chat_history}
+    You are an ultra-fast typing autocomplete assistant.
+    Context: {data.chat_history}
+    User is currently typing: "{user_input}"
     
-    The user is currently typing this response: "{user_input}"
+    Task: The user paused typing. Provide exactly 2 short options to autocomplete/auto-correct their text based on context.
+    - Option 1: A natural, concise completion of their current thought.
+    - Option 2: A grammatically cleaned-up or polished version of their thought.
     
-    Task: The user has stopped typing. Provide 3 different options to autocomplete or auto-correct their draft.
-    - Option 1: Fix grammar/spelling of the draft. Do NOT alter the meaning.
-    - Option 2: Provide a logical, slightly expanded completion of their thought.
-    - Option 3: Provide a professional/polished version of what they are trying to say based on context.
-    
-    Keep the replies concise and natural for a chat.
-    Your response must be ONLY a raw JSON array containing exactly 3 strings. 
-    Example: ["Option 1", "Option 2", "Option 3"]
+    Keep the replies extremely short.
+    Respond ONLY with a raw JSON array of 2 strings: ["Opt 1", "Opt 2"]
     """
 
     model_time_start = time.time()
@@ -147,7 +143,10 @@ async def auto_correct(data: RequestData, request: Request):
             "model": "qwen2.5:7b",
             "prompt": prompt,
             "stream": False,
-            "format": "json" 
+            "format": "json",
+            "options": {
+                "num_predict": 80, # Cap max output tokens drastically to force speed
+            }
         }, timeout=25)
         
         model_time = time.time() - model_time_start

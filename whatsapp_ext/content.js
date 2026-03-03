@@ -114,7 +114,7 @@ function insertText(text, inputBoxNode) {
 }
 
 let typingTimer;
-const DONE_TYPING_INTERVAL = 600; // Fast real-time typing debounce (600ms)
+const DONE_TYPING_INTERVAL = 250; // Ultra-fast real-time typing debounce (250ms)
 let currentRequestToken = 0;
 
 async function handleAction(inputBox, isAutoCorrection) {
