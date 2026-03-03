@@ -109,6 +109,8 @@ function showSuggestions(suggestions, inputBox) {
 function insertText(text, inputBoxNode) {
     if (inputBoxNode) {
         inputBoxNode.focus();
+        // Select all existing text in the box so it gets replaced
+        document.execCommand('selectAll', false, null);
         document.execCommand('insertText', false, text);
     }
 }

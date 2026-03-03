@@ -127,12 +127,11 @@ async def auto_correct(data: RequestData, request: Request):
     Context: {data.chat_history}
     User is currently typing: "{user_input}"
     
-    Task: The user paused typing. Provide exactly 2 short options to autocomplete/auto-correct their text based on context.
-    - Option 1: A natural, concise completion of their current thought.
-    - Option 2: A grammatically cleaned-up or polished version of their thought.
+    Task: The user paused typing. Provide exactly 1 short option to autocomplete/auto-correct their text based on context.
+    - Provide a natural, concise, and grammatically correct completion or polish of their current thought.
     
-    Keep the replies extremely short.
-    Respond ONLY with a raw JSON array of 2 strings: ["Opt 1", "Opt 2"]
+    Keep the reply extremely short.
+    Respond ONLY with a raw JSON array containing exactly 1 string: ["Opt 1"]
     """
 
     model_time_start = time.time()
