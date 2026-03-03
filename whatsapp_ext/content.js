@@ -114,22 +114,29 @@ function showSuggestions(suggestions, inputBox) {
 function insertText(text, inputBoxNode) {
     if (!inputBoxNode) return;
 
-    // Ensure browser thinks we are actively in the box
     inputBoxNode.focus();
 
-    // 1. Try selecting all text cleanly
-    document.execCommand('selectAll', false, null);
+    // 1. Nuke all existing content directly in the DOM
+    inputBoxNode.innerHTML = '';
 
-    // 2. Execute 'delete' to wipe whatever is selected.
-    // As a bulletproof fallback for React/Lexical: if selectAll failed and the caret is just 
-    // sitting at the end of the text, this loop will organically backspace the entire draft!
-    const draftLength = inputBoxNode.innerText.length + 20;
-    for (let i = 0; i < draftLength; i++) {
-        document.execCommand('delete', false, null);
-    }
+    // 2. Create a fresh text node with the AI suggestion
+    const textNode = document.createTextNode(text);
+    inputBoxNode.appendChild(textNode);
 
-    // 3. The text box is now guaranteed empty. Insert the AI response!
-    document.execCommand('insertText', false, text);
+    // 3. Place cursor at end of the new text
+    const range = document.createRange();
+    range.selectNodeContents(inputBoxNode);
+    range.collapse(false); // collapse to end
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+
+    // 4. Notify React/Lexical that content changed via modern InputEvent
+    inputBoxNode.dispatchEvent(new InputEvent('input', {
+        bubbles: true,
+        inputType: 'insertText',
+        data: text
+    }));
 }
 
 let typingTimer;
