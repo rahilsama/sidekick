@@ -67,6 +67,7 @@ function showSuggestions(suggestions, inputBox) {
         <button id='sk-close'>✕</button>
     </div>`;
 
+    document.getElementById('sk-close').onmousedown = (e) => e.preventDefault();
     document.getElementById('sk-close').onclick = (e) => {
         e.stopPropagation();
         sidekickUI.style.display = 'none';
@@ -80,6 +81,10 @@ function showSuggestions(suggestions, inputBox) {
         const btn = document.createElement("button");
         btn.className = "sk-option";
         btn.innerText = sug;
+        // CRITICAL: Prevent the button from stealing focus from the text box
+        btn.onmousedown = (e) => {
+            e.preventDefault();
+        };
         btn.onclick = (e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -108,17 +113,10 @@ function showSuggestions(suggestions, inputBox) {
 
 function insertText(text, inputBoxNode) {
     if (inputBoxNode) {
+        // Ensure browser thinks we are actively in the box
         inputBoxNode.focus();
-
-        // Manually select all nodes in the contentEditable box so execCommand replaces them
-        const range = document.createRange();
-        range.selectNodeContents(inputBoxNode);
-
-        const sel = window.getSelection();
-        sel.removeAllRanges();
-        sel.addRange(range);
-
-        // WhatsApp react listener grabs events through standard ExecCommand
+        // Since focus wasn't stolen by the mouse click, we can cleanly select all and overwrite
+        document.execCommand('selectAll', false, null);
         document.execCommand('insertText', false, text);
     }
 }
